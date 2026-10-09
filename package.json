@@ -1,0 +1,50 @@
+{
+  "name": "handsup-classroom-assistant",
+  "version": "0.2.1",
+  "description": "Windows 课堂 PPT 实时提问助手原型",
+  "main": "main.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "electron .",
+    "capture-ui": "electron . --capture-preview",
+    "check": "node --check main.js && node --check preload.js && node --check src/renderer.js",
+    "pack-dir": "electron-builder --win dir",
+    "dist": "electron-builder --win portable"
+  },
+  "keywords": [
+    "classroom",
+    "ppt",
+    "assistant",
+    "electron"
+  ],
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^44.7.0",
+    "electron-builder": "^26.15.3"
+  },
+  "build": {
+    "appId": "com.handsup.classroom",
+    "productName": "HandsUp",
+    "artifactName": "HandsUp-${version}-portable.${ext}",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "src/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "signAndEditExecutable": false
+    }
+  }
+}

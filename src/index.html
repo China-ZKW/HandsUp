@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HandsUp</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="hero">
+        <div class="brand-lockup">
+          <span class="brand-mark">H</span>
+          <div>
+            <p class="eyebrow">CLASSROOM COPILOT</p>
+            <div class="title-line">
+              <h1>HandsUp</h1>
+              <span class="title-dot"></span>
+            </div>
+            <p class="subtitle">看懂当前 PPT，不错过老师的下一页。</p>
+          </div>
+        </div>
+        <div class="header-actions">
+          <span class="live-pill"><i></i>课堂模式</span>
+          <span id="providerBadge" class="provider-pill">AI</span>
+          <button id="settingsButton" class="icon-button" aria-label="打开设置" title="设置">⚙</button>
+        </div>
+      </header>
+
+      <div class="workspace">
+        <section class="capture-card panel">
+          <div class="section-heading">
+            <div>
+              <span class="step">01</span>
+              <div>
+                <h2>当前课堂画面</h2>
+                <p class="section-copy">拖拽框选需要提问的 PPT 区域</p>
+              </div>
+            </div>
+            <span id="sourceStatus" class="status-pill muted">未选择</span>
+          </div>
+
+          <div id="previewStage" class="preview-stage empty">
+            <canvas id="captureCanvas"></canvas>
+            <div id="emptyPreview" class="empty-preview">
+              <span class="screen-icon">▣</span>
+              <strong>连接课堂画面</strong>
+              <span>选择显示 PPT 的微信窗口或屏幕</span>
+            </div>
+          </div>
+
+          <div class="capture-footer">
+            <div class="capture-actions">
+              <button id="chooseSourceButton" class="button secondary">＋ 选择窗口</button>
+              <button id="refreshButton" class="button ghost" disabled>刷新画面</button>
+              <button id="clearCropButton" class="button ghost" disabled>重置框选</button>
+            </div>
+            <p id="cropHint" class="hint">仅在提问时发送当前截图，不会持续录屏。</p>
+          </div>
+        </section>
+
+        <aside class="side-column">
+          <section class="question-card panel">
+            <div class="section-heading">
+              <div>
+                <span class="step dark">02</span>
+                <div>
+                  <h2>举手提问</h2>
+                  <p class="section-copy">先给结论，需要时再展开</p>
+                </div>
+              </div>
+              <span class="shortcut">Alt + Q</span>
+            </div>
+
+            <div class="quick-questions" aria-label="快捷问题">
+              <button data-question="用最容易理解的方式解释这一页在讲什么，并指出最重要的结论。">这页讲什么</button>
+              <button data-question="解释这一页中的公式、符号和计算过程，说明它们为什么成立。">解释公式</button>
+              <button data-question="给我一个很短、具体的例子，帮助理解这一页的概念。">举个例子</button>
+              <button data-question="指出这一页最容易混淆或考试最可能考的地方。">易错重点</button>
+            </div>
+
+            <label for="questionInput" class="sr-only">输入你的问题</label>
+            <textarea id="questionInput" rows="3" placeholder="输入没听懂的地方…"></textarea>
+            <button id="askButton" class="button primary" disabled>
+              <span id="askButtonText">截取当前页并提问</span>
+              <span class="send-arrow">↗</span>
+              <span id="loadingDot" class="loading-dot" hidden></span>
+            </button>
+          </section>
+
+          <section id="answerCard" class="answer-card panel" hidden>
+            <div class="answer-heading">
+              <span class="answer-mark">AI</span>
+              <h2>随堂解释</h2>
+              <span id="answerStatus" class="answer-status"></span>
+              <button id="copyButton" class="text-button">复制</button>
+            </div>
+            <div id="answerText" class="answer-text"></div>
+            <p id="unclearNotice" class="unclear-notice" hidden></p>
+            <details id="evidenceDetails" class="evidence-details" hidden>
+              <summary>查看识别依据</summary>
+              <ul id="evidenceList"></ul>
+            </details>
+          </section>
+
+          <div id="answerPlaceholder" class="answer-placeholder panel">
+            <span>03</span>
+            <div>
+              <strong>答案会出现在这里</strong>
+              <p>选择画面，输入问题，然后点击提问。</p>
+            </div>
+          </div>
+        </aside>
+      </div>
+
+      <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    </main>
+
+    <dialog id="sourceDialog" class="dialog source-dialog">
+      <form method="dialog">
+        <div class="dialog-heading">
+          <div>
+            <p class="eyebrow">CAPTURE SOURCE</p>
+            <h2>选择课程窗口</h2>
+          </div>
+          <button class="icon-button" value="cancel" aria-label="关闭">×</button>
+        </div>
+        <p class="dialog-copy">选择显示同步 PPT 的微信窗口。窗口不要最小化。</p>
+        <div id="sourceGrid" class="source-grid"></div>
+      </form>
+    </dialog>
+
+    <dialog id="settingsDialog" class="dialog settings-dialog">
+      <form id="settingsForm">
+        <div class="dialog-heading">
+          <div>
+            <p class="eyebrow">SETTINGS</p>
+            <h2>设置</h2>
+          </div>
+          <button id="closeSettingsButton" type="button" class="icon-button" aria-label="关闭">×</button>
+        </div>
+
+        <label class="field">
+          <span>AI 服务</span>
+          <select id="providerInput">
+            <option value="deepseek">DeepSeek Flash</option>
+            <option value="openai">OpenAI</option>
+          </select>
+          <small>两个服务的密钥会分别保存，切换时不会互相覆盖。</small>
+        </label>
+
+        <label class="field">
+          <span id="apiKeyLabel">API 密钥</span>
+          <input id="apiKeyInput" type="password" autocomplete="off" placeholder="sk-..." />
+          <small id="apiKeyHint">密钥会使用 Windows 系统加密后保存在本机。</small>
+        </label>
+
+        <label class="field">
+          <span>模型</span>
+          <input id="modelInput" type="text" value="gpt-5.4-mini" />
+          <small id="modelHint">默认模型兼顾识图效果与响应速度。</small>
+        </label>
+
+        <label class="check-field">
+          <input id="alwaysOnTopInput" type="checkbox" checked />
+          <span>窗口始终置顶</span>
+        </label>
+
+        <div class="settings-actions">
+          <button id="clearKeyButton" type="button" class="button danger-ghost">清除密钥</button>
+          <button type="submit" class="button primary compact">保存设置</button>
+        </div>
+      </form>
+    </dialog>
+
+    <script src="renderer.js"></script>
+  </body>
+</html>
